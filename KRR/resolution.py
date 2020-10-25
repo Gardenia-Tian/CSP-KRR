@@ -59,46 +59,43 @@ def findDisagreement(f, g):
 
 #b里面包含a
 def variableInterm(a, b):
+    ret = []
     index1 = b.find('(')
     index2 = b.find(')')
     if(index1!=-1 and index2!=-1):
+        #res现在是括号里的所有的
         res = b[index1+1:index2]
-        #如果匹配上了就返回匹配起始下标
-        if a == res:
-            return index1 + 1
-        else:
-            return -1
-    #没匹配上就返回-1
-    return -1
+        it = re.finditer('[(, ,]'+a+'[), ,]',b)
+        #注意这里得到的下标是带两边的符号的，记得-1和+1
+        for match in it:
+            ret.append(match.span()[0]+1)
 
+    #没匹配上就返回空列表,匹配上了就返回起始下标
+    return ret
+
+#这里只是一个字符串的替换函数
 def multi_sub(oristring, substring, ibegin, iend):
     new = list(substring)
     ori = list(oristring)
     ori[ibegin:iend] = iter(new)
     return ''.join(ori)
 
-#有两个formula:f 和 g，还有一个替换sigma,现在要把sigma作用在f和g上
-def substitude(f, g ,sigma):
-    f_list = f[1:]
-    g_list = g[1:]
-    #我不太确定这里这么写对不对，就是同时替换还是复合这里有点搞不明白
-    for sub in sigma:
-        for j in range(len(f_list)):
-            if f_list[j] == sub[0]:
-                f_list[j] = sub[1]
+#有两个formula:f ，还有一个替换sigma,现在要把sigma作用在f上
+def substitude(f ,sigma):
+    #不要让sigma做外层循环，让每一个公式的项做外层循环，这样实现的才是同时替换
+    #因为替换后下一次就不会在考虑他了
+    for i in range(1,len(f)):
+        for sub in sigma:
+            #如果匹配可以替换
+            if f[i]==sub[0]:
+                f[i] = sub[1]
             else:
-                index = variableInterm(sub[0],f_list[j])
-                if index != -1:
-                    f_list[j] = multi_sub(f_list[j],sub[1],index,index + len(sub[0]))
-        for j in range(len(g_list)):
-            if g_list[j] == sub[0]:
-                g_list[j] = sub[1]
-            else:
-                index = variableInterm(sub[0],g_list[j])
-                if index != -1:
-                    g_list[j] = multi_sub(g_list[j],sub[1],index,index + len(sub[0]))
-    f[1:] = f_list
-    g[1:] = g_list
+                #否则找里面的是不是能有可以替换的
+                index = variableInterm(sub[0],f[i])
+                for ind in index:
+                    f[i] = multi_sub(f[i],sub[1], ind, ind + len(sub[0]))
+
+
 
 
 
@@ -106,40 +103,27 @@ def substitude(f, g ,sigma):
 #f和g表示两个公式
 def MGU(f, g):
     sigma = []
+    # 如果不这样的话，在循环里面操作每次都要创建匿名变量我觉得效率低开销大
     f_list = f[1:]
     g_list = g[1:]
     k = 0
     if len(f) != len(g) or (not isSamePredicate(f[0],g[0])):
         #表示两个公式不能合一
         #sigma.append(-1)
-        return None,f_list,g_list
-    #如果不这样的话，在循环里面操作每次都要创建匿名变量我觉得效率低开销大
-
+        return None
     #只要两个公式还不相等
     while f_list!=g_list:
         #找到第一个不等的位置，接下来就要考虑做替换
         i = findDisagreement(f_list,g_list)
         #如果不一样的这一项的首字母都是小写，那么就是说这两个都是项，无论如何都不能做合一
         if f_list[i][0].islower() and g_list[i][0].islower():
-            # #清空已经找到的替换
-            # sigma.clear()
-            # #加入-1表示不可能合一
-            # sigma.append(-1)
-            return None,f_list,g_list
+            return None
         #如果f的这个是变量，但是g里面的项包含了它
-        elif f_list[i][0].isupper() and variableInterm(f_list[i],g_list[i])!=-1:
-            # # 清空已经找到的替换
-            # sigma.clear()
-            # # 加入-1表示不可能合一
-            # sigma.append(-1)
-            return None,f_list,g_list
+        elif f_list[i][0].isupper() and variableInterm(f_list[i],g_list[i])!=[]:
+            return None
         # 如果g的这个是变量，但是f里面的项包含了它
-        elif g_list[i][0].isupper() and variableInterm(g_list[i],f_list[i]) != -1:
-            # # 清空已经找到的替换
-            # sigma.clear()
-            # # 加入-1表示不可能合一
-            # sigma.append(-1)
-            return None,f_list,g_list
+        elif g_list[i][0].isupper() and variableInterm(g_list[i],f_list[i]) != []:
+            return None
         #至少有一个是变量而且不相互包含，可以替换合一
         else:
             k = k+1
@@ -153,37 +137,36 @@ def MGU(f, g):
                         sub[1] = tempg
                     else:
                         index = variableInterm(tempf,sub[1])
-                        if index != -1:
-                            sub[1] = multi_sub(sub[1],tempg,index,index + len(tempf))
+                        for ind in index:
+                            sub[1] = multi_sub(sub[1],tempg,ind,ind + len(tempf))
+                sigma.append([f_list[i], g_list[i]])
                 for sub in sigma:
                     if sub[0]==sub[1]:
                         sigma.remove(sub)
-                sigma.append([f_list[i],g_list[i]])
+
 
                 for j in range(len(f_list)):
                     if f_list[j] == tempf:
                         f_list[j] = tempg
                     else:
                         index = variableInterm(tempf, f_list[j])
-                        if index != -1:
-                            #f_list[j][index:index + len(tempf)] = tempg
-                            f_list[j] = multi_sub(f_list[j],tempg,index,index + len(tempf))
+                        for ind in index:
+                            f_list[j] = multi_sub(f_list[j],tempg,ind,ind + len(tempf))
                 for j in range(len(g_list)):
                     if g_list[j] == tempf:
                         g_list[j] = tempg
                     else:
                         index = variableInterm(tempf, g_list[j])
-                        if index != -1:
-                            #g_list[j][index:index + len(tempf)] = tempg
-                            g_list[j] = multi_sub(g_list[j],tempg,index,index + len(tempf))
+                        for ind in index:
+                            g_list[j] = multi_sub(g_list[j], tempg, ind, ind + len(tempf))
             else:
                 for sub in sigma:
                     if sub[1]== tempg:
                         sub[1] = tempf
                     else:
                         index = variableInterm(tempg,sub[1])
-                        if index != -1:
-                            sub[1] = multi_sub(sub[1],tempf,index,index + len(tempg))
+                        for ind in index:
+                            sub[1] = multi_sub(sub[1], tempf, ind, ind + len(tempg))
                 for sub in sigma:
                     if sub[0]==sub[1]:
                         sigma.remove(sub)
@@ -196,24 +179,22 @@ def MGU(f, g):
                         g_list[j] = tempf
                     else:
                         index = variableInterm(tempg,g_list[j])
-                        if index!=-1:
-                            #g_list[j][index:index+len(tempg)] = tempf
-                            g_list[j] = multi_sub(g_list[j],tempf,index,index + len(tempg))
+                        for ind in index:
+                            g_list[j] = multi_sub(g_list[j], tempf, ind, ind + len(tempg))
+
                 for j in range(len(f_list)):
                     if f_list[j] == tempg:
                         f_list[j] = tempf
                     else:
                         index = variableInterm(tempg, f_list[j])
-                        if index != -1:
-                            #f_list[j][index:index + len(tempg)] = tempf
-                            f_list[j] = multi_sub(f_list[j],tempf,index,index+len(tempg))
-
+                        for ind in index:
+                            f_list[j] = multi_sub(f_list[j], tempf, ind, ind + len(tempg))
 
     #在找MGU的时候不要进行替换
     #f[1:] = f_list
     #g[1:] = g_list
     #把替换后的也返回，这样如果要用就很方便
-    return sigma, f_list, g_list
+    return sigma
 
 
 
@@ -229,7 +210,7 @@ def resolution_two(f, g, clauses, ope):
         indexf,indexg = findPredicateToResolution(f,g)
         if indexf==-1 and indexg==-1:
             break
-        sigma, f_list,g_list = MGU(f[indexf],f[indexg])
+        sigma = MGU(f[indexf],f[indexg])
         #说明存在合一
         if sigma != None:
             del(f[indexf])
@@ -242,17 +223,26 @@ def resolution_two(f, g, clauses, ope):
 
 
 
-num = 0
-clauses = []
-num=int(input())
-for i in range(0, num):
-    clause = []
-    for item in re.findall(r'¬*[a-zA-Z]+\([a-zA-Z,\s]*\)', input()):
-        items = re.findall(r'[¬a-zA-Z]+', item)
-        clause.append(items)
+# num = 0
+# clauses = []
+# num=int(input())
+# for i in range(0, num):
+#     clause = []
+#     for item in re.findall(r'¬*[a-zA-Z]+\([a-zA-Z,\s]*\)', input()):
+#         items = re.findall(r'[¬a-zA-Z]+', item)
+#         clause.append(items)
+#
+#     clauses.append(clause)
+# print(clauses)
 
-    clauses.append(clause)
-print(clauses)
+test1 = ['P','f(X)','Z']
+test2 = ['P','Y','X']
+sigma = MGU(test1,test2)
+print(sigma)
+
+
+
+
 
 
 
