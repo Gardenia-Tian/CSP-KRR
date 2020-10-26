@@ -30,7 +30,8 @@
 # (¬On(X,Y), ¬Green(X), Green(Y))
 ###################################
 import re
-
+import copy
+from queue import Queue,LifoQueue,PriorityQueue
 #就是匹配一下这两个字符串
 def isSamePredicate(a, b):
     if a==b :
@@ -205,22 +206,64 @@ def resolution_two(f, g, clauses, ope):
     # Y.append(chr(97 + index))
     inf = clauses.index(f)
     ing = clauses.index(g)
+    sigma = []
+    tmpf = copy.deepcopy(f)
+    tmpg = copy.deepcopy(g)
+    hasre = False
     while(1):
         # 首先判断能不能消解，消解只有一种形式，同一谓词有非和无非
-        indexf,indexg = findPredicateToResolution(f,g)
+        indexf,indexg = findPredicateToResolution(tmpf,tmpg)
         if indexf==-1 and indexg==-1:
             break
-        sigma = MGU(f[indexf],f[indexg])
+
+        sigma = MGU(f[indexf],g[indexg])
         #说明存在合一
         if sigma != None:
-            del(f[indexf])
-            del(g[indexg])
-            substitude(f,g,sigma)
-            #还要把这次替换的结果写到clauses中
-            newclause = list(set(f + g))
+            del(tmpf[indexf])
+            del(tmpg[indexg])
+            for i1 in range(len(tmpf)):
+                substitude(tmpf[i1],sigma)
+            for i1 in range(len(tmpg)):
+                substitude(tmpg[i1],sigma)
+            hasre = True
+            newclause = tmpf + tmpg
             clauses.append(newclause)
-            ope.append([inf,chr(97+indexf),ing,chr(97+indexg),sigma,newclause])
+            ope.append([inf + 1, chr(97 + indexf), ing + 1, chr(97 + indexg), sigma, newclause])
+        else:
+            break
+    #还要把这次替换的结果写到clauses中
+    #newclause = list(set(tmpf + tmpg))
+    # if hasre:
+    #     newclause = tmpf + tmpg
+    #     clauses.append(newclause)
+    #     ope.append([inf,chr(97+indexf),ing,chr(97+indexg),sigma,newclause])
 
+def resolution_all(clauses,ope):
+    #优先从最后一个开始归结
+    find = False
+    oneround = False
+    index = len(clauses) - 2
+    start = index + 1
+    while(1):
+        index = index + 1
+        if index == start and oneround == True:
+            index = last
+        if index == len(clauses):
+            oneround = True
+            if last==index:
+                find = False
+                break
+            last = index
+            index = 0
+
+        for i in range(index):
+            resolution_two(clauses[index],clauses[i],clauses,ope)
+            if clauses[len(clauses)-1] == []:
+                find = True
+                break
+        if find==True:
+            break
+    return find,index
 
 
 # num = 0
@@ -235,14 +278,26 @@ def resolution_two(f, g, clauses, ope):
 #     clauses.append(clause)
 # print(clauses)
 
-test1 = ['P','f(X)','Z']
-test2 = ['P','Y','X']
-sigma = MGU(test1,test2)
-print(sigma)
+clauses = [[['On', 'aa', 'bb']], [['On', 'bb', 'cc']], [['Green', 'aa']], [['¬Green', 'cc']], [['¬On', 'X', 'Y'], ['¬Green', 'X'], ['Green', 'Y']]]
+# clauses = [[['GradStudent', 'sue']], [['¬GradStudent', 'X'], ['Student', 'X']], [['¬Student', 'X'], ['HardWorker', 'X']], [['¬HardWorker', 'sue']]]
+# clauses = [[['A', 'tony']], [['A', 'mike']], [['A', 'john']], [['L', 'tony', 'rain']], [['L', 'tony', 'snow']], [['¬A', 'X'], ['S', 'X'], ['C', 'X']], [['¬C', 'Y'], ['¬L', 'Y', 'rain']], [['L', 'Z', 'snow'], ['¬S', 'Z']], [['¬L', 'tony', 'U'], ['¬L', 'mike', 'U']], [['L', 'tony', 'V'], ['L', 'mike', 'V']], [['¬A', 'W'], ['¬C', 'W'], ['S', 'W']]]
+
+# test1 = ['P','f(X)','Z']
+# test2 = ['P','Y','X']
+# sigma = MGU(test1,test2)
+# print(sigma)
+
+ope = []
+orinum = len(clauses)
+find,index = resolution_all(clauses,ope)
+# print(clauses)
+
+for i in range(orinum):
+    print(clauses[i])
 
 
-
-
-
+for i in range(len(ope)):
+    print(i,ope[i])
+print(find)
 
 
