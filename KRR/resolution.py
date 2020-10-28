@@ -265,6 +265,15 @@ def resolution_all(clauses,ope):
             break
     return find,index
 
+def findindex(clause_used,i,orinum):
+    if i<=clause_used[0]:
+        return i
+    for j in range(len(clause_used)):
+        if clause_used[j]==i:
+            return j + orinum
+    return i
+
+
 
 # num = 0
 # clauses = []
@@ -278,26 +287,41 @@ def resolution_all(clauses,ope):
 #     clauses.append(clause)
 # print(clauses)
 
-clauses = [[['On', 'aa', 'bb']], [['On', 'bb', 'cc']], [['Green', 'aa']], [['¬Green', 'cc']], [['¬On', 'X', 'Y'], ['¬Green', 'X'], ['Green', 'Y']]]
+# clauses = [[['On', 'aa', 'bb']], [['On', 'bb', 'cc']], [['Green', 'aa']], [['¬Green', 'cc']], [['¬On', 'X', 'Y'], ['¬Green', 'X'], ['Green', 'Y']]]
 # clauses = [[['GradStudent', 'sue']], [['¬GradStudent', 'X'], ['Student', 'X']], [['¬Student', 'X'], ['HardWorker', 'X']], [['¬HardWorker', 'sue']]]
-# clauses = [[['A', 'tony']], [['A', 'mike']], [['A', 'john']], [['L', 'tony', 'rain']], [['L', 'tony', 'snow']], [['¬A', 'X'], ['S', 'X'], ['C', 'X']], [['¬C', 'Y'], ['¬L', 'Y', 'rain']], [['L', 'Z', 'snow'], ['¬S', 'Z']], [['¬L', 'tony', 'U'], ['¬L', 'mike', 'U']], [['L', 'tony', 'V'], ['L', 'mike', 'V']], [['¬A', 'W'], ['¬C', 'W'], ['S', 'W']]]
+clauses = [[['A', 'tony']], [['A', 'mike']], [['A', 'john']], [['L', 'tony', 'rain']], [['L', 'tony', 'snow']], [['¬A', 'X'], ['S', 'X'], ['C', 'X']], [['¬C', 'Y'], ['¬L', 'Y', 'rain']], [['L', 'Z', 'snow'], ['¬S', 'Z']], [['¬L', 'tony', 'U'], ['¬L', 'mike', 'U']], [['L', 'tony', 'V'], ['L', 'mike', 'V']], [['¬A', 'W'], ['¬C', 'W'], ['S', 'W']]]
 
-# test1 = ['P','f(X)','Z']
-# test2 = ['P','Y','X']
-# sigma = MGU(test1,test2)
-# print(sigma)
 
 ope = []
 orinum = len(clauses)
 find,index = resolution_all(clauses,ope)
-# print(clauses)
 
+#########################格式化输出################################
+clause_used = []
+indexchain = Queue(maxsize=0)
+index = len(ope)-1
+clause_used.append(index + orinum)
+indexchain.put(index)
+
+while not indexchain.empty():
+    index = indexchain.get()
+    if ope[index][0] > orinum:
+        clause_used.append(ope[index][0]-1)
+        indexchain.put(ope[index][0] - orinum - 1)
+    if ope[index][2] > orinum:
+        clause_used.append(ope[index][2]-1)
+        indexchain.put(ope[index][2] - orinum - 1)
+
+clause_used = list(set(clause_used))
+clause_used.sort()
 for i in range(orinum):
     print(clauses[i])
 
 
-for i in range(len(ope)):
-    print(i,ope[i])
+for i in range(len(clause_used)):
+    i1 = 1 + findindex(clause_used,ope[clause_used[i]-orinum][0]-1,orinum)
+    i2 = 1 + findindex(clause_used,ope[clause_used[i]-orinum][2]-1,orinum)
+    print("R[", i1, ope[clause_used[i] - orinum][1], ",", i2,
+          ope[clause_used[i] - orinum][3], "]", ope[clause_used[i] - orinum][4], ope[clause_used[i] - orinum][5])
+
 print(find)
-
-
