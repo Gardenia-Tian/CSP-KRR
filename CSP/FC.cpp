@@ -6,9 +6,9 @@
 #include <vector>
 #include <map>
 #include <ctime>
-#include <string>
 #include <fstream>
-#define NUM_OF_TEST 0
+#include <string>
+
 using namespace std;
 
 class FutoshikiPuzzle {
@@ -26,13 +26,13 @@ public:
         int numRow;
         string filename;
     };
+
     //地图
     vector<vector<node>> maps;
     //限制
     vector<pair<pair<int, int>, pair<int, int>>> less_constraints;
-    vector<file> allfile;
     int nRow, nColumn;
-    int cnt = 0;
+    vector<file> allfile;
 
     void initial() {
         vector<vector<int>> copy_map = { {0, 0, 0, 7, 3, 8, 0, 5, 0},
@@ -168,15 +168,14 @@ public:
             }
         }
 
-
-        //根据已经填写的数字开始删除各个位置的候选值
-        for (int i = 0; i < nRow; i++) {
+        /*for (int i = 0; i < nRow; i++) {
             for (int j = 0; j < nColumn; j++) {
                 vector<pair<pair<int, int>, int>> catches = check(i, j);
             }
-        }
-        
+        }*/
+
     }
+
     void addConstraints(int x, int y, int x1, int y1) {
         less_constraints.push_back({ {x,  y},
                                     {x1, y1} });
@@ -213,7 +212,7 @@ public:
             }
 
             if (x == less_constraints[i].second.first && y == less_constraints[i].second.second) {
-                for (int j = 1; j <= maps[x][y].val; j++) {
+                for (int j = maps[x][y].val; j <= nRow; j++) {
                     if (!maps[less_constraints[i].first.first][less_constraints[i].first.second].digits[j]) {
                         maps[less_constraints[i].first.first][less_constraints[i].first.second].digits[j] = true;
                         catches.push_back({ {less_constraints[i].first.first, less_constraints[i].first.second}, j });
@@ -225,9 +224,8 @@ public:
     }
 
     bool search(int x, int y) {
-        cnt++;
         if (maps[x][y].val == 0) {
-            for (int i = 1; i < nRow + 1; i++) {
+            for (int i = 1; i < nRow+1; i++) {
                 //还在队列中没有被访问过
                 if (!maps[x][y].digits[i]) {
                     maps[x][y].val = i;
@@ -305,10 +303,9 @@ public:
 int main() {
     FutoshikiPuzzle* futoshikiPuzzle = new FutoshikiPuzzle();
     //初始化
-    futoshikiPuzzle->initial(NUM_OF_TEST);
+    futoshikiPuzzle->initial(3);
     //显示空表
     futoshikiPuzzle->show();
-
     //记录时间
     clock_t start, end;
     start = clock();
@@ -316,10 +313,8 @@ int main() {
     futoshikiPuzzle->search(0, 0);
     end = clock();
 
-    ////显示最终结果
+    //显示最终结果
     futoshikiPuzzle->show();
 
-    cout << "-----test case " << NUM_OF_TEST << " ----- \n" << endl;
-    cout << "GAC Time cost : " << (double)(end - start) / CLOCKS_PER_SEC << " s" << endl;
-    cout << "Total nodes expanded: " << futoshikiPuzzle->cnt << endl;
+    cout << "FC Time cost : " << (double)(end - start) / CLOCKS_PER_SEC << " s" << endl;
 }
