@@ -6,9 +6,9 @@
 #include <vector>
 #include <map>
 #include <ctime>
-#include <fstream>
 #include <string>
-
+#include <fstream>
+#define NUM_OF_TEST 5
 using namespace std;
 
 class FutoshikiPuzzle {
@@ -26,13 +26,13 @@ public:
         int numRow;
         string filename;
     };
-
     //地图
     vector<vector<node>> maps;
     //限制
     vector<pair<pair<int, int>, pair<int, int>>> less_constraints;
-    int nRow, nColumn;
     vector<file> allfile;
+    int nRow, nColumn;
+    int cnt = 0;
 
     void initial() {
         vector<vector<int>> copy_map = { {0, 0, 0, 7, 3, 8, 0, 5, 0},
@@ -168,14 +168,16 @@ public:
             }
         }
 
-        /*for (int i = 0; i < nRow; i++) {
+
+        //根据已经填写的数字开始删除各个位置的候选值
+        for (int i = 0; i < nRow; i++) {
             for (int j = 0; j < nColumn; j++) {
-                vector<pair<pair<int, int>, int>> catches = check(i, j);
+                if (maps[i][j].val != 0)
+                    vector<pair<pair<int, int>, int>> catches = check(i, j);
             }
-        }*/
-
+        }
+        
     }
-
     void addConstraints(int x, int y, int x1, int y1) {
         less_constraints.push_back({ {x,  y},
                                     {x1, y1} });
@@ -183,6 +185,7 @@ public:
 
     //删除候选值
     vector<pair<pair<int, int>, int>> check(int x, int y) {
+        
         //缓存，如果失败可能需要回溯
         vector<pair<pair<int, int>, int>> catches;
         //纵向横向删除候选值：
@@ -224,8 +227,10 @@ public:
     }
 
     bool search(int x, int y) {
+        cnt++;
+        //this->show();
         if (maps[x][y].val == 0) {
-            for (int i = 1; i < nRow+1; i++) {
+            for (int i = 1; i < nRow + 1; i++) {
                 //还在队列中没有被访问过
                 if (!maps[x][y].digits[i]) {
                     maps[x][y].val = i;
@@ -303,9 +308,10 @@ public:
 int main() {
     FutoshikiPuzzle* futoshikiPuzzle = new FutoshikiPuzzle();
     //初始化
-    futoshikiPuzzle->initial(3);
+    futoshikiPuzzle->initial(NUM_OF_TEST);
     //显示空表
     futoshikiPuzzle->show();
+
     //记录时间
     clock_t start, end;
     start = clock();
@@ -313,8 +319,10 @@ int main() {
     futoshikiPuzzle->search(0, 0);
     end = clock();
 
-    //显示最终结果
+    ////显示最终结果
     futoshikiPuzzle->show();
 
-    cout << "FC Time cost : " << (double)(end - start) / CLOCKS_PER_SEC << " s" << endl;
+    cout << "-----test case " << NUM_OF_TEST << " ----- \n" << endl;
+    cout << "GAC Time cost : " << (double)(end - start) / CLOCKS_PER_SEC << " s" << endl;
+    cout << "Total nodes expanded: " << futoshikiPuzzle->cnt << endl;
 }
